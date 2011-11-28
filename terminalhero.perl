@@ -1,71 +1,163 @@
 #!/usr/bin/perl
 
 use Term::ReadKey;
+use Term::TermKey qw( FORMAT_VIM KEYMOD_CTRL );
+use POE qw(Wheel::TermKey);
 use Time::HiRes qw(usleep nanosleep);
 use IO::Handle qw( );
 use POSIX;
 
-STDOUT->autoflush(1);
-
-($width) = GetTerminalSize();
-die "You must have at least 10 characters" unless $width >= 40;
+########################################################################
 
 @letters = ('a'..'z');
+# game levels
 @levels = ("n00b", "user", "root", "hacker", "God", "cheater");
+# lines with letters to shoot
+@lines = ();
 
+$HEALTH = 32;
+
+# state of the game
 %game_stat = (
   "lifes" => 4,
-  "health" => 16,
+  "health" => $HEALTH,
   "level" => 0,
   "score" => 0
 );
 
-sub play_level {
+# terminal width
+($width) = GetTerminalSize();
 
-  my $line_length = $width;
-  
-  $game_stat{"lifes"} = 4;
-  my $lines_number = $_[0] + 1;
-  
-  # range of hit area
-  %hit_range = (
-    "start" => floor(($line_length) / 4) - 5,
-    "end" => floor(($line_length) / 4) + 5 
-  );
-               
-  # sign states with color ids
-  %sign_states = (
-    "normal" => `tput setf 7`,
-    "shooted" => `tput setf 2`,
-    "missed" => `tput setf 4`
-  );
+# range of hit area
+%hit_range = (
+  "start" => floor(($width) / 4) - 5,
+  "end" => floor(($width) / 4) + 5 
+);
 
-  while ($game_stat{"lifes"} > 0) {
-    $game_stat{"health"} = 16;
-    # prepare an array with empty lines
-    @lines = ();
+# states of letters with their colors
+%sign_states = (
+  "normal" => `tput setf 7`,
+  "shooted" => `tput setf 2`,
+  "missed" => `tput setf 4`
+);
 
-    for ($j=0; $j<$lines_number; $j++) {
-      for ($i=0; $i<$line_length; $i++) {
-        my %sign = (
-          "character" => " ",
-          "state" => "empty"
-        );
-        push @{ $lines[$j] }, \%sign;
+########################################################################
+
+POE::Session->create(
+  inline_states => {
+     
+    _start => sub {
+         
+      STDOUT->autoflush(1);
+      # hide cursor
+      print(`tput civis`);
+      
+      $_[KERNEL]->yield("next_life");
+      
+      $_[HEAP]{termkey} = POE::Wheel::TermKey->new(
+        InputEvent => 'got_key',
+      );
+      
+    },
+      
+    got_key => sub {
+      my $key     = $_[ARG0];
+      my $termkey = $_[HEAP]{termkey};
+
+      my $test = 0;
+      for ($j=0; $j <= $game_stat{"level"}; $j++) {
+        for ($i=$hit_range{"start"}; $i<$hit_range{"end"}; $i++) {
+          if ( $lines[$j][$i]{"character"} eq $termkey->format_key( $key, FORMAT_VIM ) ) {
+            if ("normal" eq $lines[$j][$i]{"state"}) {
+              $game_stat{"score"}++;
+            }
+            $lines[$j][$i]{"state"} = "shooted";
+            $test = 1;
+          }
+        }
       }
-    }
+      
+      if ($test == 0
+          && $game_stat{"score"} > 64 * ($game_stat{"level"})) {
+        $game_stat{"score"}--;
+      }
+ 
+      # Gotta exit somehow.
+      delete $_[HEAP]{termkey} if $key->type_is_unicode and
+                                   $key->utf8 eq "C" and
+                                   $key->modifiers & KEYMOD_CTRL;
+      },
+        
+    clear => sub {
+      # show cursor
+      print(`tput cnorm`);
+      # clear screen
+      print(`tput ed`);
+    },
     
-    # life loop
-    while ($game_stat{"health"} > 0) {
+    game_over => sub {
+      # show cursor
+      print(`tput cnorm`);
+      # clear screen
+      print(`tput ed`);
+      print("\nGame over! You are a" . @levels[$game_stat{"level"}] . ". :)\n\n");
+      exit(0);
+    },
+    
+    win => sub {
+      # show cursor
+      print(`tput cnorm`);
+      # clear screen
+      print(`tput ed`);
+      print("\nOMG... YOU WIN!\n
+              You must be... the choosen one. O_O\n\n");
+      exit(0);
+    },
+    
+    next_level => sub {
+      if ($game_stat{"level"} < 6) {
+        # $game_stat{"lifes"} = 4;
+        $game_stat{"health"} = $HEALTH;
+        $_[KERNEL]->yield("next_life");
+      }
+      else {
+        $_[KERNEL]->yield("win");
+      }
+    },
+    
+    next_life => sub {
+      if ($game_stat{"lifes"} < 1) {
+        $_[KERNEL]->yield("game_over");
+      }
+      else {
+        $game_stat{"health"} = $HEALTH;
+        # prepare an array with empty lines
+        @lines = ();
+        for ($j=0; $j <= $game_stat{"level"}; $j++) {
+          for ($i=0; $i<$width; $i++) {
+            my %sign = (
+              "character" => " ",
+              "state" => "empty"
+            );
+            push @{ $lines[$j] }, \%sign;
+          }
+        }
+        $_[KERNEL]->yield("play");
+      }
+    },
+      
+    play => sub {
       my $output = `tput setb 2`;
-      $output .= `tput setf 7`;
-      $output .= `tput bold`;
+         $output .= `tput setf 7`;
+         $output .= `tput bold`;
       
+      # prepare bar with game state
       my $bar = "    level: " . @levels[$game_stat{"level"}] . "    |    ";
-      $bar .= "lifes: " . $game_stat{"lifes"} . "    |    ";
-      $bar .= "health: " . $game_stat{"health"} . "    |    ";
-      $bar .= "score: " . $game_stat{"score"};
+         $bar .= "lifes: " . $game_stat{"lifes"} . "    |    ";
+         $bar .= "health: " . $game_stat{"health"} . "    |    ";
+         $bar .= "score: " . $game_stat{"score"};
       
+      # print 
       for (my $i=length($bar); $i<$width; $i++) {
         $bar .= " ";
       }
@@ -73,8 +165,9 @@ sub play_level {
       $output .= $bar . "\n";
       $output .= `tput setb 0`;
       $output .= `tput sgr0`;
+
       # for each line with signs
-      for ($j=0; $j<$lines_number; $j++) {
+      for ($j=0; $j<$game_stat{"level"}+1; $j++) {
         
         # remove first sign
         shift($lines[$j]);
@@ -93,7 +186,9 @@ sub play_level {
         for ($i=0; $i<$width; $i++) {
           
           # check for missed signs
-          if ($i < $hit_range{"start"} && ($lines[$j][$i]{"state"} eq "normal") && ($lines[$j][$i]{"character"} ne " ") ) {
+          if ($i < $hit_range{"start"} 
+              && ($lines[$j][$i]{"state"} eq "normal") 
+              && ($lines[$j][$i]{"character"} ne " ") ) {
             $game_stat{"health"}--;
             $lines[$j][$i]{"state"} = "missed";
           }
@@ -125,20 +220,30 @@ sub play_level {
       
       print($output);
 
-      for ($j=0; $j<$lines_number + 1; $j++) {
+      for ($j=0; $j <= $game_stat{"level"} + 1; $j++) {
         print(`tput cuu1`);
       }
       
-      usleep(50000);
-      
-    }
-    $game_stat{"lifes"}--;
+      # if he's dead
+      if ($game_stat{"score"} >= 64 * ($game_stat{"level"} + 1)) {
+        $game_stat{"level"}++;
+        $_[KERNEL]->yield("next_level");
+      }
+      else {
+        if ($game_stat{"health"} < 1) {
+          $game_stat{"lifes"}--;
+          $_[KERNEL]->yield("next_life");
+        }
+        else {
+          # display next frame
+          $_[KERNEL]->delay(play => 0.1);
+        }
+      }
+    },
+    
   }
-}
-
-# hide cursor
-print(`tput civis`);
-
-for (my $i=0; $i<length(@levels); $i++) {
-  play_level($i);
-}
+);
+ 
+########################################################################
+ 
+POE::Kernel->run;
