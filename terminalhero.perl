@@ -1,24 +1,27 @@
 #!/usr/bin/perl
 
+use strict;
+use warnings;
+
 use Term::ReadKey;
-use Term::TermKey qw( FORMAT_VIM KEYMOD_CTRL );
-use POE qw(Wheel::TermKey);
-use Time::HiRes qw(usleep nanosleep);
-use IO::Handle qw( );
+use Term::TermKey;
+use POE;
+use POE::Wheel::TermKey;
+use IO::Handle;
 use POSIX;
 
 ########################################################################
 
-@letters = ('a'..'z');
+my @letters = ('a'..'z');
 # game levels
-@levels = ("n00b", "user", "root", "hacker", "God", "cheater");
+my @levels = ("n00b", "user", "root", "hacker", "God", "cheater");
 # lines with letters to shoot
-@lines = ();
+my @lines = ();
 
-$HEALTH = 32;
+my $HEALTH = 32;
 
 # state of the game
-%game_stat = (
+my %game_stat = (
   "lifes" => 4,
   "health" => $HEALTH,
   "level" => 0,
@@ -26,16 +29,16 @@ $HEALTH = 32;
 );
 
 # terminal width
-($width) = GetTerminalSize();
+my ($width) = GetTerminalSize();
 
 # range of hit area
-%hit_range = (
+my %hit_range = (
   "start" => floor(($width) / 4) - 5,
   "end" => floor(($width) / 4) + 5 
 );
 
 # states of letters with their colors
-%sign_states = (
+my %sign_states = (
   "normal" => `tput setf 7`,
   "shooted" => `tput setf 2`,
   "missed" => `tput setf 4`
@@ -65,8 +68,8 @@ POE::Session->create(
       my $termkey = $_[HEAP]{termkey};
 
       my $test = 0;
-      for ($j=0; $j <= $game_stat{"level"}; $j++) {
-        for ($i=$hit_range{"start"}; $i<$hit_range{"end"}; $i++) {
+      for (my $j=0; $j <= $game_stat{"level"}; $j++) {
+        for (my $i=$hit_range{"start"}; $i<$hit_range{"end"}; $i++) {
           if ( $lines[$j][$i]{"character"} eq $termkey->format_key( $key, FORMAT_VIM ) ) {
             if ("normal" eq $lines[$j][$i]{"state"}) {
               $game_stat{"score"}++;
@@ -100,7 +103,7 @@ POE::Session->create(
       print(`tput cnorm`);
       # clear screen
       print(`tput ed`);
-      print("\nGame over! You are a" . @levels[$game_stat{"level"}] . ". :)\n\n");
+      print("\nGame over! You are a " . @levels[$game_stat{"level"}] . ". :)\n\n");
       exit(0);
     },
     
@@ -109,13 +112,12 @@ POE::Session->create(
       print(`tput cnorm`);
       # clear screen
       print(`tput ed`);
-      print("\nOMG... YOU WIN!\n
-              You must be... the choosen one. O_O\n\n");
+      print("\nOMG... YOU WIN! You must be... the choosen one. O_O\n\n");
       exit(0);
     },
     
     next_level => sub {
-      if ($game_stat{"level"} < 6) {
+      if ($game_stat{"level"} < scalar(@levels)) {
         # $game_stat{"lifes"} = 4;
         $game_stat{"health"} = $HEALTH;
         $_[KERNEL]->yield("next_life");
@@ -133,8 +135,8 @@ POE::Session->create(
         $game_stat{"health"} = $HEALTH;
         # prepare an array with empty lines
         @lines = ();
-        for ($j=0; $j <= $game_stat{"level"}; $j++) {
-          for ($i=0; $i<$width; $i++) {
+        for (my $j=0; $j <= $game_stat{"level"}; $j++) {
+          for (my $i=0; $i<$width; $i++) {
             my %sign = (
               "character" => " ",
               "state" => "empty"
@@ -147,12 +149,12 @@ POE::Session->create(
     },
       
     play => sub {
-      my $output = `tput setb 2`;
-         $output .= `tput setf 7`;
+      my $output = `tput setb 7`;
+         $output .= `tput setf 0`;
          $output .= `tput bold`;
       
       # prepare bar with game state
-      my $bar = "    level: " . @levels[$game_stat{"level"}] . "    |    ";
+      my $bar = "    whoami: " . @levels[$game_stat{"level"}] . "    |    ";
          $bar .= "lifes: " . $game_stat{"lifes"} . "    |    ";
          $bar .= "health: " . $game_stat{"health"} . "    |    ";
          $bar .= "score: " . $game_stat{"score"};
@@ -167,7 +169,7 @@ POE::Session->create(
       $output .= `tput sgr0`;
 
       # for each line with signs
-      for ($j=0; $j<$game_stat{"level"}+1; $j++) {
+      for (my $j=0; $j<$game_stat{"level"}+1; $j++) {
         
         # remove first sign
         shift($lines[$j]);
@@ -183,7 +185,7 @@ POE::Session->create(
         push($lines[$j], \%sign);
         
         # iterate over every sign in the line
-        for ($i=0; $i<$width; $i++) {
+        for (my $i=0; $i<$width; $i++) {
           
           # check for missed signs
           if ($i < $hit_range{"start"} 
@@ -209,8 +211,11 @@ POE::Session->create(
             $output .= `tput sgr0`;
           }
           
-          # print sign
-          $output .= $sign_states{$lines[$j][$i]{"state"}};
+          # print color escape code
+          if ($sign_states{$lines[$j][$i]{"state"}}) {
+            $output .= $sign_states{$lines[$j][$i]{"state"}};
+          }
+          # print the letter
           $output .= $lines[$j][$i]{"character"};
 
           ($width) = GetTerminalSize();
@@ -220,7 +225,7 @@ POE::Session->create(
       
       print($output);
 
-      for ($j=0; $j <= $game_stat{"level"} + 1; $j++) {
+      for (my $j=0; $j <= $game_stat{"level"} + 1; $j++) {
         print(`tput cuu1`);
       }
       
@@ -236,7 +241,7 @@ POE::Session->create(
         }
         else {
           # display next frame
-          $_[KERNEL]->delay(play => 0.1);
+          $_[KERNEL]->delay(play => 0.07);
         }
       }
     },
