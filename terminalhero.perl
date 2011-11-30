@@ -12,6 +12,38 @@ use POSIX;
 
 ########################################################################
 
+# display help
+if ($#ARGV >= 0) {
+  
+  if ($#ARGV > 1) {
+    print "To many options. \n"
+  }
+  else {
+    if (($ARGV[0] ne "--help") and ($ARGV[0] ne "-h")) {
+      print "Unknown argument " . $ARGV[0] . ".\n";
+    }
+  }
+  
+  print "\nTerminal Hero\n";
+  print "Linux society's response to Microsoft's Guitar Hero. :)\n\n";
+  print "Usage: terminalhero.perl [options]\n\n";
+  print "Options:\n";
+  print "-h, --help\tdisplay this help\n\n";
+  print "Rules:\n";
+  print "Press keys with letters which are in the green area.\n";
+  print "Your score will increase if you do it well and decrease \n";
+  print "if you press wrong key. You can also lose health points \n";
+  print "and lifes if the letters turns red. \n\n";
+  print "Levels:\n";
+  print "You will reach new levels every 64 points.\n";
+  print "Each level is a new line, so it is going harder.\n\n";
+  print "Now go and play! :)\n\n";
+  
+  exit;
+}
+
+########################################################################
+
 my @letters = ('a'..'z');
 # game levels
 my @levels = ("n00b", "user", "root", "hacker", "God", "cheater");
@@ -62,7 +94,8 @@ POE::Session->create(
       );
       
     },
-      
+    
+    # user pressed a key, he want to hit a letter ######################
     got_key => sub {
       my $key     = $_[ARG0];
       my $termkey = $_[HEAP]{termkey};
@@ -90,24 +123,21 @@ POE::Session->create(
                                    $key->utf8 eq "C" and
                                    $key->modifiers & KEYMOD_CTRL;
       },
-        
-    clear => sub {
-      # show cursor
-      print(`tput cnorm`);
-      # clear screen
-      print(`tput ed`);
-    },
     
+    # game over, clear the screen and write a message ##################
     game_over => sub {
+      print(`tput sgr0`);
       # show cursor
       print(`tput cnorm`);
       # clear screen
       print(`tput ed`);
-      print("\nGame over! You are a " . @levels[$game_stat{"level"}] . ". :)\n\n");
+      print("\nGame over! You are a " . @levels[$game_stat{"level"}] . ". ;)\n\n");
       exit(0);
     },
     
+    # win, clear the screen and write a message ########################
     win => sub {
+      print(`tput sgr0`);
       # show cursor
       print(`tput cnorm`);
       # clear screen
@@ -116,6 +146,7 @@ POE::Session->create(
       exit(0);
     },
     
+    # let's start a new level ##########################################
     next_level => sub {
       if ($game_stat{"level"} < scalar(@levels)) {
         # $game_stat{"lifes"} = 4;
@@ -127,6 +158,7 @@ POE::Session->create(
       }
     },
     
+    # let's start a new life, with new letters #########################
     next_life => sub {
       if ($game_stat{"lifes"} < 1) {
         $_[KERNEL]->yield("game_over");
@@ -147,19 +179,19 @@ POE::Session->create(
         $_[KERNEL]->yield("play");
       }
     },
-      
+    
+    # this is the main loop (recursion) ################################
     play => sub {
       my $output = `tput setb 7`;
          $output .= `tput setf 0`;
-         $output .= `tput bold`;
       
-      # prepare bar with game state
+      # prepare bar with th game's state
       my $bar = "    whoami: " . @levels[$game_stat{"level"}] . "    |    ";
          $bar .= "lifes: " . $game_stat{"lifes"} . "    |    ";
          $bar .= "health: " . $game_stat{"health"} . "    |    ";
          $bar .= "score: " . $game_stat{"score"};
       
-      # print 
+      # print rest of a bar
       for (my $i=length($bar); $i<$width; $i++) {
         $bar .= " ";
       }
@@ -223,25 +255,28 @@ POE::Session->create(
         $output .= "\n";
       }
       
+      # print the frame
       print($output);
 
+      # go up to reprint lines
       for (my $j=0; $j <= $game_stat{"level"} + 1; $j++) {
         print(`tput cuu1`);
       }
       
-      # if he's dead
+      # if he's good enought;)
       if ($game_stat{"score"} >= 64 * ($game_stat{"level"} + 1)) {
         $game_stat{"level"}++;
         $_[KERNEL]->yield("next_level");
       }
       else {
+        # if he's dead
         if ($game_stat{"health"} < 1) {
           $game_stat{"lifes"}--;
           $_[KERNEL]->yield("next_life");
         }
         else {
           # display next frame
-          $_[KERNEL]->delay(play => 0.07);
+          $_[KERNEL]->delay(play => 0.05);
         }
       }
     },
