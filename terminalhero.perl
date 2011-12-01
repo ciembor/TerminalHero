@@ -136,8 +136,8 @@ POE::Session->create(
       my $key     = $_[ARG0];
       my $termkey = $_[HEAP]{termkey};
 
-      if (('<C-d>' eq $termkey->format_key( $key, FORMAT_VIM ))
-           or ('<Escape>' eq $termkey->format_key( $key, FORMAT_VIM ))) {
+      if (('<C-d>' eq $termkey->format_key($key, FORMAT_VIM))
+           or ('<Escape>' eq $termkey->format_key($key, FORMAT_VIM))) {
         print($esc{"reset"});
         # show cursor
         print($esc{"show_cursor"});
@@ -163,7 +163,8 @@ POE::Session->create(
       }
       
       if ($test == 0
-          and $game_stat{"score"} > $NEXT_LEVEL_POINTS * ($game_stat{"level"})) {
+          and $game_stat{"score"} 
+               > $NEXT_LEVEL_POINTS * ($game_stat{"level"})) {
         $game_stat{"score"}--;
       }
  
@@ -336,7 +337,8 @@ POE::Session->create(
       }
       
       # if he's good enought;)
-      if ($game_stat{"score"} >= $NEXT_LEVEL_POINTS * ($game_stat{"level"} + 1)) {
+      if ($game_stat{"score"} 
+           >= $NEXT_LEVEL_POINTS * ($game_stat{"level"} + 1)) {
         $game_stat{"level"}++;
         $_[KERNEL]->yield("next_level");
       }
