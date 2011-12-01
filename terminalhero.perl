@@ -1,14 +1,16 @@
 #!/usr/bin/perl
 
 use strict;
-use warnings;
+# not in protoduction mode:)
+# use warnings;
 
+use POSIX;
+use IO::Handle;
 use Term::ReadKey;
 use Term::TermKey;
 use POE;
 use POE::Wheel::TermKey;
-use IO::Handle;
-use POSIX;
+use Time::HiRes;
 
 ########################################################################
 
@@ -28,7 +30,9 @@ if ($#ARGV >= 0) {
   print "Linux society's response to Microsoft's Guitar Hero. :)\n\n";
   print "Usage: terminalhero.perl [options]\n\n";
   print "Options:\n";
-  print "-h, --help\tdisplay this help\n\n";
+  print "-h, --help\t\t display this help\n\n";
+  print "Shortcuts:\n";
+  print "Ctrl+D or Esc\t\t exit\n\n";
   print "Rules:\n";
   print "Press keys with letters which are in the green area.\n";
   print "Your score will increase if you do it well and decrease \n";
@@ -44,17 +48,49 @@ if ($#ARGV >= 0) {
 
 ########################################################################
 
-my @letters = ('a'..'z');
+# terminal features (calling tput is slow... don't use it in a loop)
+my %esc = (
+  "hide_cursor" => `tput civis`,
+  "show_cursor" => `tput cnorm`,
+  "clear_scr" => `tput ed`,
+  "font_white" => `tput setf 7`,
+  "font_green" => `tput setf 2`,
+  "font_red" => `tput setf 4`,
+  "font_black" => `tput setf 0`,
+  "reset" => `tput sgr0`,
+  "bg_green" => `tput setb 2`,
+  "bg_black" => `tput setb 0`,
+  "bg_white" => `tput setb 7`,
+  "bold" => `tput bold`,
+  "line_up" => `tput cuu1`
+);
+
 # game levels
-my @levels = ("n00b", "user", "root", "hacker", "God", "cheater");
+my @levels = (
+  "n00b", 
+  "user", 
+  "root", 
+  "geek", 
+  "hacker", 
+  "God", 
+  "cheater"
+);
+  
 # lines with letters to shoot
 my @lines = ();
+my @letters = ('a'..'z');
 
 my $HEALTH = 32;
+my $NEXT_LEVEL_POINTS = 64;
+my $LIFES = 4;
+
+# we need a framerate and a timestamp, the game should be smooth
+my $FRAMERATE = 0.08;
+my $timestamp = 0;
 
 # state of the game
 my %game_stat = (
-  "lifes" => 4,
+  "lifes" => $LIFES,
   "health" => $HEALTH,
   "level" => 0,
   "score" => 0
@@ -71,9 +107,9 @@ my %hit_range = (
 
 # states of letters with their colors
 my %sign_states = (
-  "normal" => `tput setf 7`,
-  "shooted" => `tput setf 2`,
-  "missed" => `tput setf 4`
+  "normal" => $esc{"font_white"},
+  "shooted" => $esc{"font_green"},
+  "missed" => $esc{"font_red"}
 );
 
 ########################################################################
@@ -85,25 +121,38 @@ POE::Session->create(
          
       STDOUT->autoflush(1);
       # hide cursor
-      print(`tput civis`);
+      print($esc{"hide_cursor"});
       
       $_[KERNEL]->yield("next_life");
       
       $_[HEAP]{termkey} = POE::Wheel::TermKey->new(
-        InputEvent => 'got_key',
+        InputEvent => 'keypressed',
       );
       
     },
-    
+
     # user pressed a key, he want to hit a letter ######################
-    got_key => sub {
+    keypressed => sub {
       my $key     = $_[ARG0];
       my $termkey = $_[HEAP]{termkey};
 
+      if (('<C-d>' eq $termkey->format_key( $key, FORMAT_VIM ))
+           or ('<Escape>' eq $termkey->format_key( $key, FORMAT_VIM ))) {
+        print($esc{"reset"});
+        # show cursor
+        print($esc{"show_cursor"});
+        # clear screen
+        print($esc{"clear_scr"});
+        exit;
+        
+      } 
+
+      # check if he hit a letter in the green area
       my $test = 0;
       for (my $j=0; $j <= $game_stat{"level"}; $j++) {
         for (my $i=$hit_range{"start"}; $i<$hit_range{"end"}; $i++) {
-          if ( $lines[$j][$i]{"character"} eq $termkey->format_key( $key, FORMAT_VIM ) ) {
+          if ( $lines[$j][$i]{"character"} 
+               eq $termkey->format_key( $key, FORMAT_VIM ) ) {
             if ("normal" eq $lines[$j][$i]{"state"}) {
               $game_stat{"score"}++;
             }
@@ -114,11 +163,11 @@ POE::Session->create(
       }
       
       if ($test == 0
-          && $game_stat{"score"} > 64 * ($game_stat{"level"})) {
+          and $game_stat{"score"} > $NEXT_LEVEL_POINTS * ($game_stat{"level"})) {
         $game_stat{"score"}--;
       }
  
-      # Gotta exit somehow.
+      # gotta exit somehow
       delete $_[HEAP]{termkey} if $key->type_is_unicode and
                                    $key->utf8 eq "C" and
                                    $key->modifiers & KEYMOD_CTRL;
@@ -126,30 +175,30 @@ POE::Session->create(
     
     # game over, clear the screen and write a message ##################
     game_over => sub {
-      print(`tput sgr0`);
+      print($esc{"reset"});
       # show cursor
-      print(`tput cnorm`);
+      print($esc{"show_cursor"});
       # clear screen
-      print(`tput ed`);
-      print("\nGame over! You are a " . @levels[$game_stat{"level"}] . ". ;)\n\n");
+      print($esc{"clear_scr"});
+      print("\nGame over! You are a "
+            . @levels[$game_stat{"level"}] . ". ;)\n\n");
       exit(0);
     },
     
     # win, clear the screen and write a message ########################
     win => sub {
-      print(`tput sgr0`);
+      print($esc{"reset"});
       # show cursor
-      print(`tput cnorm`);
+      print($esc{"show_cursor"});
       # clear screen
-      print(`tput ed`);
-      print("\nOMG... YOU WIN! You must be... the choosen one. O_O\n\n");
+      print($esc{"clear_scr"});
+      print("\nYou win! Neo, you must be... the choosen one. O_O\n\n");
       exit(0);
     },
     
     # let's start a new level ##########################################
     next_level => sub {
       if ($game_stat{"level"} < scalar(@levels)) {
-        # $game_stat{"lifes"} = 4;
         $game_stat{"health"} = $HEALTH;
         $_[KERNEL]->yield("next_life");
       }
@@ -182,47 +231,64 @@ POE::Session->create(
     
     # this is the main loop (recursion) ################################
     play => sub {
-      my $output = `tput setb 7`;
-         $output .= `tput setf 0`;
+      # frame rate should be stable, this may helps
+      $timestamp = [ Time::HiRes::gettimeofday( ) ];
       
-      # prepare bar with th game's state
-      my $bar = "    whoami: " . @levels[$game_stat{"level"}] . "    |    ";
-         $bar .= "lifes: " . $game_stat{"lifes"} . "    |    ";
-         $bar .= "health: " . $game_stat{"health"} . "    |    ";
-         $bar .= "score: " . $game_stat{"score"};
+      # save cursor position
+      print(`tput sc`);
       
-      # print rest of a bar
-      for (my $i=length($bar); $i<$width; $i++) {
-        $bar .= " ";
+      my $output = $esc{"bg_white"};
+         $output .= $esc{"font_black"};
+      
+      # prepare bar with the game's state
+      my $bar = "    whoami: " . @levels[$game_stat{"level"}]
+                . "    |    "
+                . "lifes: " . $game_stat{"lifes"} 
+                . "    |    "
+                . "health: " . $game_stat{"health"} 
+                . "    |    "
+                . "score: " . $game_stat{"score"};
+      
+      if (length($bar)<=$width) {
+        # print rest of a bar
+        for (my $i=length($bar); $i<$width; $i++) {
+          $bar .= " ";
+        }
+      }
+      else {
+        # cut it if it's too long
+        $bar = substr($bar, 0, $width);
       }
       
-      $output .= $bar . "\n";
-      $output .= `tput setb 0`;
-      $output .= `tput sgr0`;
-
+      $output .= $bar . "\n" . $esc{"bg_black"}
+                             . $esc{"reset"};
+      
       # for each line with signs
       for (my $j=0; $j<$game_stat{"level"}+1; $j++) {
         
-        # remove first sign
+        # remove first letter
         shift($lines[$j]);
         
-        # generate new sign
-        my %sign = (
-          "character" => " ",
-          "state" => "normal"
-        );
-        if (int(rand(10)) < 1) {
-          $sign{"character"} = $letters[int rand @letters];
+        ($width) = GetTerminalSize();
+        # generate new letter(s - if someone change terminal size)
+        for (my $i=scalar(@{ $lines[$j] }); $i<$width; $i++) {
+          my %sign = (
+            "character" => " ",
+            "state" => "normal"
+          );
+          if (int(rand(10)) < 1) {
+            $sign{"character"} = $letters[int rand @letters];
+          }
+          push($lines[$j], \%sign);
         }
-        push($lines[$j], \%sign);
-        
+      
         # iterate over every sign in the line
         for (my $i=0; $i<$width; $i++) {
           
           # check for missed signs
           if ($i < $hit_range{"start"} 
-              && ($lines[$j][$i]{"state"} eq "normal") 
-              && ($lines[$j][$i]{"character"} ne " ") ) {
+              and ($lines[$j][$i]{"state"} eq "normal") 
+              and ($lines[$j][$i]{"character"} ne " ") ) {
             $game_stat{"health"}--;
             $lines[$j][$i]{"state"} = "missed";
           }
@@ -230,17 +296,17 @@ POE::Session->create(
           # set hit area colors
           if ($i eq $hit_range{"start"}) {
             # green background
-            $output .= `tput setb 2`;
+            $output .= $esc{"bg_green"};
             # bold font
-            $output .= `tput bold`;
+            $output .= $esc{"bold"};
           }
           
           # set standard area colors 
           if ($i eq $hit_range{"end"}) {
             # black background
-            $output .= `tput setb 0`;
+            $output .= $esc{"bg_black"};
             # standard text
-            $output .= `tput sgr0`;
+            $output .= $esc{"reset"};
           }
           
           # print color escape code
@@ -250,21 +316,27 @@ POE::Session->create(
           # print the letter
           $output .= $lines[$j][$i]{"character"};
 
-          ($width) = GetTerminalSize();
         }
         $output .= "\n";
       }
       
       # print the frame
       print($output);
-
-      # go up to reprint lines
-      for (my $j=0; $j <= $game_stat{"level"} + 1; $j++) {
-        print(`tput cuu1`);
+      
+      # clear screen to the end (if minified terminal)
+      print($esc{"clear_scr"});
+      
+      # restore cursor position
+      # tput rc doesn't work whent cursor is in the last line :(
+      # I should find a way to get position of cursor
+      # print(`tput rc`);
+      # this solution will couse problems after terminal resizing
+      for (my $i=0; $i<=$game_stat{"level"}+1; $i++) {
+        print($esc{"line_up"});
       }
       
       # if he's good enought;)
-      if ($game_stat{"score"} >= 64 * ($game_stat{"level"} + 1)) {
+      if ($game_stat{"score"} >= $NEXT_LEVEL_POINTS * ($game_stat{"level"} + 1)) {
         $game_stat{"level"}++;
         $_[KERNEL]->yield("next_level");
       }
@@ -275,8 +347,11 @@ POE::Session->create(
           $_[KERNEL]->yield("next_life");
         }
         else {
-          # display next frame
-          $_[KERNEL]->delay(play => 0.05);
+          # display next frame 
+          # period may be below 0, don't worry, it actually will be 0 :)
+          $_[KERNEL]->delay(
+            play => $FRAMERATE - Time::HiRes::tv_interval($timestamp)
+          );
         }
       }
     },
@@ -285,5 +360,5 @@ POE::Session->create(
 );
  
 ########################################################################
- 
+
 POE::Kernel->run;
