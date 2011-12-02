@@ -17,7 +17,7 @@ If you have problems with installation of Term::TermKey, make sure that __libter
     Usage: terminalhero.perl [options]
 
     Options:
-    -h, --help		 display this help
+    -h, --help		   display this help
 
     Shortcuts:
     Ctrl+D or Esc		 exit
