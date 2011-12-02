@@ -14,23 +14,22 @@ If you have problems with installation of Term::TermKey, make sure that __libter
 
 ## Help
 
-### Usage: 
-terminalhero.perl [options]
+    Usage: terminalhero.perl [options]
 
-### Options:
--h, --help		 display this help
+    Options:
+    -h, --help		 display this help
 
-### Shortcuts:
-Ctrl+D or Esc		 exit
+    Shortcuts:
+    Ctrl+D or Esc		 exit
 
-### Rules:
-Press keys with letters which are in the green area.
-Your score will increase if you do it well and decrease 
-if you press wrong key. You can also lose health points 
-and lifes if the letters turns red. 
+    Rules:
+    Press keys with letters which are in the green area.
+    Your score will increase if you do it well and decrease 
+    if you press wrong key. You can also lose health points 
+    and lifes if the letters turns red. 
 
-### Levels:
-You will reach new levels every 64 points.
-Each level is a new line, so it is going harder.
+    Levels:
+    You will reach new levels every 64 points.
+    Each level is a new line, so it is going harder.
 
 Now go and play! :)
