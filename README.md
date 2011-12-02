@@ -9,7 +9,8 @@ It also needs some extra Perl __modules__:
 * POE::Wheel::TermKey
 * Term::ReadKey
 * Term::TermKey
- 
+
+If you don't know how to install Perl __modules__, look at [How to install CPAN modules](http://www.cpan.org/modules/INSTALL.html).
 If you have problems with installation of Term::TermKey, make sure that __libtermkey__ is available in your operating system. If not - [Installing Term::TermKey returns error](http://stackoverflow.com/questions/8287071/installing-termtermkey-returns-error) should help you.
 
 ## Help
