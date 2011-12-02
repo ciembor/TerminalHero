@@ -1,18 +1,21 @@
 # Terminal Hero
-Linux society's response to Microsoft's Guitar Hero. :)
+## Linux society's response to Microsoft's Guitar Hero. :)
 
 ## Installation
 This game is written in Perl language, so it depends on __perl__ interpreter.
 It also needs some extra Perl __modules__:
+
 * POE
 * POE::Wheel::TermKey
 * Term::ReadKey
-* Term::TermKey 
+* Term::TermKey
+ 
 If you have problems with installation of Term::TermKey, make sure that __libtermkey__ is available in your operating system. If not - [Installing Term::TermKey returns error](http://stackoverflow.com/questions/8287071/installing-termtermkey-returns-error) should help you.
 
 ## Help
 
-### Usage: terminalhero.perl [options]
+### Usage: 
+terminalhero.perl [options]
 
 ### Options:
 -h, --help		 display this help
