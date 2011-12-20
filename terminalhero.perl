@@ -1,49 +1,68 @@
 #!/usr/bin/perl
 
-use strict;
-# not in protoduction mode:)
-# use warnings;
-
-use POSIX;
-use IO::Handle;
-use Term::ReadKey;
-use Term::TermKey;
-use POE;
-use POE::Wheel::TermKey;
-use Time::HiRes;
-
-########################################################################
-
-# display help
-if ($#ARGV >= 0) {
+BEGIN {
   
-  if ($#ARGV > 1) {
-    print "To many options. \n"
-  }
-  else {
-    if (($ARGV[0] ne "--help") and ($ARGV[0] ne "-h")) {
-      print "Unknown argument " . $ARGV[0] . ".\n";
+  $FRAMERATE = 0.08;
+  
+  # help
+  my $h = "\nTerminal Hero\n"
+        . "Linux society's response to Microsoft's Guitar Hero. :)\n\n"
+        . "Usage: terminalhero.perl [options]\n\n"
+        . "Options:\n"
+        . "-e, --easy\t\t turn on easy mode\n"
+        . "-h, --help\t\t display this help\n\n"
+        . "Shortcuts:\n"
+        . "Ctrl+D or Esc\t\t exit\n\n"
+        . "Rules:\n"
+        . "Press keys with letters which are in the green area.\n"
+        . "Your score will increase if you do it well and decrease \n"
+        . "if you press wrong key. You can also lose health points \n"
+        . "and lifes if the letters turns red. \n\n"
+        . "Levels:\n"
+        . "You will reach new levels every 64 points.\n"
+        . "Each level is a new line, so it is going harder.\n\n"
+        . "Now go and play! :)\n\n";
+  
+  # take arguments
+  if ($#ARGV >= 0) {
+    
+    foreach (@ARGV) {
+      if ($_ ne "-h" 
+          and $_ ne "--help" 
+          and $_ ne "-e" 
+          and $_ ne "--easy") {
+        print "Unknown argument " . $_ . ".\n";
+      }
+    }
+    
+    if (not ("-e" ~~ @ARGV or "--easy" ~~ @ARGV)) {
+      print($h);
+      exit;
+    }
+    else {
+      $FRAMERATE = 0.12;
     }
   }
   
-  print "\nTerminal Hero\n";
-  print "Linux society's response to Microsoft's Guitar Hero. :)\n\n";
-  print "Usage: terminalhero.perl [options]\n\n";
-  print "Options:\n";
-  print "-h, --help\t\t display this help\n\n";
-  print "Shortcuts:\n";
-  print "Ctrl+D or Esc\t\t exit\n\n";
-  print "Rules:\n";
-  print "Press keys with letters which are in the green area.\n";
-  print "Your score will increase if you do it well and decrease \n";
-  print "if you press wrong key. You can also lose health points \n";
-  print "and lifes if the letters turns red. \n\n";
-  print "Levels:\n";
-  print "You will reach new levels every 64 points.\n";
-  print "Each level is a new line, so it is going harder.\n\n";
-  print "Now go and play! :)\n\n";
+  # define Perl modules
+  my @modules = (
+    "strict", 
+    "POSIX", 
+    "IO::Handle", 
+    "Term::ReadKey", 
+    "Term::TermKey", 
+    "POE", 
+    "POE::Wheel::TermKey",
+    "Time::HiRes"
+  );
   
-  exit;
+  # load Perl modules
+  foreach (@modules) {
+    eval "use " . $_ . ";";
+    die "Unable to load " . $_
+        . " module. Please, install it.\n\nError details:\n$@\n" if $@;
+  } 
+  
 }
 
 ########################################################################
@@ -84,8 +103,7 @@ my $HEALTH = 32;
 my $NEXT_LEVEL_POINTS = 64;
 my $LIFES = 4;
 
-# we need a framerate and a timestamp, the game should be smooth
-my $FRAMERATE = 0.08;
+# we need a timestamp, the game should be smooth
 my $timestamp = 0;
 
 # state of the game
@@ -152,7 +170,7 @@ POE::Session->create(
       for (my $j=0; $j <= $game_stat{"level"}; $j++) {
         for (my $i=$hit_range{"start"}; $i<$hit_range{"end"}; $i++) {
           if ( $lines[$j][$i]{"character"} 
-               eq $termkey->format_key( $key, FORMAT_VIM ) ) {
+               eq $termkey->format_key($key, FORMAT_VIM) ) {
             if ("normal" eq $lines[$j][$i]{"state"}) {
               $game_stat{"score"}++;
             }
