@@ -17,7 +17,7 @@ BEGIN {
         . "Press keys with letters which are in the green area.\n"
         . "Your score will increase if you do it well and decrease \n"
         . "if you press wrong key. You can also lose health points \n"
-        . "and lifes if the letters turns red. \n\n"
+        . "and lifes if letters turns red. \n\n"
         . "Levels:\n"
         . "You will reach new levels every 64 points.\n"
         . "Each level is a new line, so it is going harder.\n\n"
@@ -35,7 +35,7 @@ BEGIN {
       }
     }
     
-    if (not ("-e" ~~ @ARGV or "--easy" ~~ @ARGV)) {
+    if ($ARGV[0] ne "-e" and $ARGV[0] ne "--easy") {
       print($h);
       exit;
     }
@@ -59,8 +59,8 @@ BEGIN {
   # load Perl modules
   foreach (@modules) {
     eval "use " . $_ . ";";
-    die "Unable to load " . $_
-        . " module. Please, install it.\n\nError details:\n$@\n" if $@;
+    die "\nUnable to load " . $_
+        . " Perl module. Please, install it using cpan.\n\nError details:\n$@\n" if $@;
   } 
   
 }
