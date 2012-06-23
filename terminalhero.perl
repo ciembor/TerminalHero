@@ -60,7 +60,8 @@ BEGIN {
   foreach (@modules) {
     eval "use " . $_ . ";";
     die "\nUnable to load " . $_
-        . " Perl module. Please, install it using cpan.\n\nError details:\n$@\n" if $@;
+        . " Perl module. Please, install it using cpan.\n\n"
+        . "Error details:\n$@\n" if $@;
   } 
   
 }
@@ -190,7 +191,7 @@ POE::Session->create(
       delete $_[HEAP]{termkey} if $key->type_is_unicode and
                                    $key->utf8 eq "C" and
                                    $key->modifiers & KEYMOD_CTRL;
-      },
+    },
     
     # game over, clear the screen and write a message ##################
     game_over => sub {
