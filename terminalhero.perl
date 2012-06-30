@@ -60,7 +60,8 @@ BEGIN {
   foreach (@modules) {
     eval "use " . $_ . ";";
     die "\nUnable to load " . $_
-        . " Perl module. Please, install it using cpan.\n\nError details:\n$@\n" if $@;
+        . " Perl module. Please, install it using cpan.\n\n"
+        . "Error details:\n$@\n" if $@;
   } 
   
 }
