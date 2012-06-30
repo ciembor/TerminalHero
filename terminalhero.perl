@@ -17,7 +17,7 @@ BEGIN {
         . "Press keys with letters which are in the green area.\n"
         . "Your score will increase if you do it well and decrease \n"
         . "if you press wrong key. You can also lose health points \n"
-        . "and lifes if letters turns red. \n\n"
+        . "and lives letters turns red. \n\n"
         . "Levels:\n"
         . "You will reach new levels every 64 points.\n"
         . "Each level is a new line, so it is going harder.\n\n"
@@ -101,14 +101,14 @@ my @letters = ('a'..'z');
 
 my $HEALTH = 32;
 my $NEXT_LEVEL_POINTS = 64;
-my $LIFES = 4;
+my $LIVES = 4;
 
 # we need a timestamp, the game should be smooth
 my $timestamp = 0;
 
 # state of the game
 my %game_stat = (
-  "lifes" => $LIFES,
+  "lives" => $LIVES,
   "health" => $HEALTH,
   "level" => 0,
   "score" => 0
@@ -190,7 +190,7 @@ POE::Session->create(
       delete $_[HEAP]{termkey} if $key->type_is_unicode and
                                    $key->utf8 eq "C" and
                                    $key->modifiers & KEYMOD_CTRL;
-      },
+    },
     
     # game over, clear the screen and write a message ##################
     game_over => sub {
@@ -228,7 +228,7 @@ POE::Session->create(
     
     # let's start a new life, with new letters #########################
     next_life => sub {
-      if ($game_stat{"lifes"} < 1) {
+      if ($game_stat{"lives"} < 1) {
         $_[KERNEL]->yield("game_over");
       }
       else {
@@ -262,7 +262,7 @@ POE::Session->create(
       # prepare bar with the game's state
       my $bar = "    whoami: " . @levels[$game_stat{"level"}]
                 . "    |    "
-                . "lifes: " . $game_stat{"lifes"} 
+                . "lives: " . $game_stat{"lives"} 
                 . "    |    "
                 . "health: " . $game_stat{"health"} 
                 . "    |    "
@@ -363,7 +363,7 @@ POE::Session->create(
       else {
         # if he's dead
         if ($game_stat{"health"} < 1) {
-          $game_stat{"lifes"}--;
+          $game_stat{"lives"}--;
           $_[KERNEL]->yield("next_life");
         }
         else {
