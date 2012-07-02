@@ -14,6 +14,7 @@ If you don't know how to install Perl __modules__, look at [How to install CPAN 
 If you have problems with installation of __Term::TermKey__, make sure that __libtermkey__ is available in your operating system. If not - [Installing Term::TermKey returns error](http://stackoverflow.com/questions/8287071/installing-termtermkey-returns-error) should help you.
 
 To install Terminal Hero type in your shell:
+
     perl Makefile.PL
     make
     make install
