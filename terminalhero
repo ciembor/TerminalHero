@@ -7,7 +7,7 @@ BEGIN {
   # help
   my $h = "\nTerminal Hero\n"
         . "Linux society's response to Microsoft's Guitar Hero. :)\n\n"
-        . "Usage: terminalhero.perl [options]\n\n"
+        . "Usage: terminalhero [options]\n\n"
         . "Options:\n"
         . "-e, --easy\t\t turn on easy mode\n"
         . "-h, --help\t\t display this help\n\n"

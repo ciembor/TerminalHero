@@ -3,25 +3,31 @@ __Linux society's response to Microsoft's Guitar Hero. :)__
 
 ## Installation
 This game is written in Perl language, so it depends on __perl__ interpreter.
-It also needs some extra Perl __modules__:
+It also needs __libtermkey__ and some extra Perl __modules__:
 
-* POE
-* POE::Wheel::TermKey
 * Term::ReadKey
 * Term::TermKey
+* POE
+* POE::Wheel::TermKey
 
 If you don't know how to install Perl __modules__, look at [How to install CPAN modules](http://www.cpan.org/modules/INSTALL.html).
 If you have problems with installation of __Term::TermKey__, make sure that __libtermkey__ is available in your operating system. If not - [Installing Term::TermKey returns error](http://stackoverflow.com/questions/8287071/installing-termtermkey-returns-error) should help you.
 
+To install Terminal Hero type in your shell:
+    perl Makefile.PL
+    make
+    make install
+
 ## Help
 
-    Usage: terminalhero.perl [options]
+    Usage: terminalhero [options]
 
     Options:
-    -h, --help		   display this help
+    -e, --easy       turn on easy mode
+    -h, --help       display this help
 
     Shortcuts:
-    Ctrl+D or Esc		 exit
+    Ctrl+D or Esc    exit
 
     Rules:
     Press keys with letters which are in the green area.
