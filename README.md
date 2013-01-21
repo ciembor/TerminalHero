@@ -1,5 +1,5 @@
 # Terminal Hero
-__Linux society's response to Microsoft's Guitar Hero. :)__
+__Linux society's response to Guitar Hero. :)__
 
 ## Installation
 This game is written in Perl language, so it depends on __perl__ interpreter.
