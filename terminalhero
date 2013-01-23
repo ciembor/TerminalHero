@@ -287,7 +287,7 @@ POE::Session->create(
       for (my $j=0; $j<$game_stat{"level"}+1; $j++) {
         
         # remove first letter
-        shift($lines[$j]);
+        shift(@{$lines[$j]});
         
         ($width) = GetTerminalSize();
         # generate new letter(s - if someone change terminal size)
@@ -299,7 +299,7 @@ POE::Session->create(
           if (int(rand(10)) < 1) {
             $sign{"character"} = $letters[int rand @letters];
           }
-          push($lines[$j], \%sign);
+          push(@{$lines[$j]}, \%sign);
         }
       
         # iterate over every sign in the line
