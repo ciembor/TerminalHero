@@ -17,7 +17,7 @@ BEGIN {
         . "Press keys with letters which are in the green area.\n"
         . "Your score will increase if you do it well and decrease \n"
         . "if you press wrong key. You can also lose health points \n"
-        . "and lives letters turns red. \n\n"
+        . "and lives if the letters turn red. \n\n"
         . "Levels:\n"
         . "You will reach new levels every 64 points.\n"
         . "Each level is a new line, so it is going harder.\n\n"

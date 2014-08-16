@@ -44,7 +44,7 @@ You might have to relogin or update your PATH variable by hand.
     Press keys with letters which are in the green area.
     Your score will increase if you do it well and decrease 
     if you press wrong key. You can also lose health points 
-    and lifes if the letters turns red. 
+    and lifes if the letters turn red. 
 
     Levels:
     You will reach new levels every 64 points.
