@@ -1,6 +1,9 @@
 # Terminal Hero
 __Linux society's response to Guitar Hero. :)__
 
+## Demo
+https://vimeo.com/44892910
+
 ## Installation
 This game is written in Perl language, so it depends on __perl__ interpreter.
 It also needs __libtermkey__ and some extra Perl __modules__:
