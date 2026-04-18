@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo_dir="${1:-$repo_root/build/apt-repo}"
+remote="${TERMINALHERO_APT_REMOTE:-ciembor@maciej-ciemborowicz.eu}"
+remote_path="${TERMINALHERO_APT_REMOTE_PATH:-/var/www/html/apt/terminalhero}"
+staging="${TERMINALHERO_APT_REMOTE_STAGING:-/tmp/terminalhero-apt-repo}"
+
+if [[ ! -d "$repo_dir" ]]; then
+  echo "APT repository directory does not exist: $repo_dir" >&2
+  exit 1
+fi
+
+ssh "$remote" "rm -rf '$staging' && mkdir -p '$staging'"
+rsync -az --delete "$repo_dir"/ "$remote:$staging"/
+ssh "$remote" "sudo mkdir -p '$remote_path' && sudo rsync -az --delete '$staging/' '$remote_path/' && sudo find '$remote_path' -type d -exec chmod 755 {} + && sudo find '$remote_path' -type f -exec chmod 644 {} +"
+
+echo "$remote:$remote_path"
+

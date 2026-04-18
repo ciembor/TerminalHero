@@ -1,4 +1,9 @@
+LICENSE
 MANIFEST
 Makefile.PL
 README.md
+Formula/terminalhero.rb
+packaging/apt/build-repo
+packaging/apt/deploy-server
+packaging/debian/build-deb
 terminalhero

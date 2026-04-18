@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+build_dir="${TERMINALHERO_BUILD_DIR:-$repo_root/build/deb}"
+debian_revision="${TERMINALHERO_DEBIAN_REVISION:-1}"
+package="terminalhero"
+architecture="all"
+maintainer="${TERMINALHERO_MAINTAINER:-Maciej Ciemborowicz <pub@ciemborowicz.pl>}"
+poe_wheel_url="https://cpan.metacpan.org/authors/id/P/PE/PEVANS/POE-Wheel-TermKey-0.02.tar.gz"
+poe_wheel_sha256="05a8e72c285b0bced5c78a6d9bf0074fe10daad6bd3469e3985d323ac98fb2e3"
+
+for command in curl dpkg-deb perl shasum tar; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    echo "Missing required build command: $command" >&2
+    exit 1
+  fi
+done
+
+version="${TERMINALHERO_VERSION:-}"
+if [[ -z "$version" ]]; then
+  version="$(
+    perl -ne "if (/VERSION\\s*=>\\s*'([^']+)'/) { print \"\$1\\n\"; exit }" \
+      "$repo_root/Makefile.PL"
+  )"
+fi
+
+if [[ -z "$version" ]]; then
+  echo "Unable to detect package version from Makefile.PL" >&2
+  exit 1
+fi
+
+package_version="${version}-${debian_revision}"
+staging="$build_dir/${package}_${package_version}_${architecture}"
+deb="$build_dir/${package}_${package_version}_${architecture}.deb"
+tmp_dir="$(mktemp -d)"
+
+cleanup() {
+  rm -rf "$tmp_dir"
+}
+trap cleanup EXIT
+
+rm -rf "$staging" "$deb"
+mkdir -p \
+  "$staging/DEBIAN" \
+  "$staging/usr/bin" \
+  "$staging/usr/share/doc/$package" \
+  "$staging/usr/share/perl5/POE/Wheel"
+
+install -m 0755 "$repo_root/terminalhero" "$staging/usr/bin/terminalhero"
+install -m 0644 "$repo_root/README.md" "$staging/usr/share/doc/$package/README.md"
+install -m 0644 "$repo_root/LICENSE" "$staging/usr/share/doc/$package/copyright"
+
+curl -fsSL "$poe_wheel_url" -o "$tmp_dir/POE-Wheel-TermKey.tar.gz"
+printf '%s  %s\n' "$poe_wheel_sha256" "$tmp_dir/POE-Wheel-TermKey.tar.gz" | shasum -a 256 -c -
+tar -xzf "$tmp_dir/POE-Wheel-TermKey.tar.gz" -C "$tmp_dir"
+install -m 0644 \
+  "$tmp_dir/POE-Wheel-TermKey-0.02/lib/POE/Wheel/TermKey.pm" \
+  "$staging/usr/share/perl5/POE/Wheel/TermKey.pm"
+
+installed_size="$(du -sk "$staging/usr" | awk '{ print $1 }')"
+cat > "$staging/DEBIAN/control" <<CONTROL
+Package: $package
+Version: $package_version
+Section: games
+Priority: optional
+Architecture: $architecture
+Maintainer: $maintainer
+Installed-Size: $installed_size
+Depends: perl, libterm-readkey-perl, libterm-termkey-perl (>= 0.08), libpoe-perl
+Homepage: https://github.com/ciembor/TerminalHero
+Description: terminal Guitar Hero-style game
+ Terminal Hero is a Perl terminal game inspired by Guitar Hero.
+CONTROL
+
+find "$staging" -type d -exec chmod 755 {} +
+dpkg-deb --root-owner-group --build "$staging" "$deb"
+echo "$deb"

@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo_dir="${TERMINALHERO_APT_REPO_DIR:-$repo_root/build/apt-repo}"
+apt_url="${TERMINALHERO_APT_URL:-https://maciej-ciemborowicz.eu/apt/terminalhero}"
+signing_key="${TERMINALHERO_APT_SIGNING_KEY:-}"
+debs=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo-dir)
+      repo_dir="$2"
+      shift 2
+      ;;
+    *)
+      debs+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ ${#debs[@]} -eq 0 ]]; then
+  while IFS= read -r -d '' deb; do
+    debs+=("$deb")
+  done < <(find "$repo_root/build/deb" -maxdepth 1 -name "*.deb" -print0 2>/dev/null || true)
+fi
+
+if [[ ${#debs[@]} -eq 0 ]]; then
+  echo "No .deb packages found. Run packaging/debian/build-deb first." >&2
+  exit 1
+fi
+
+rm -rf "$repo_dir"
+mkdir -p "$repo_dir"
+
+for deb in "${debs[@]}"; do
+  cp "$deb" "$repo_dir/"
+done
+
+(
+  cd "$repo_dir"
+  rm -f InRelease Release Release.gpg Packages Packages.gz
+  dpkg-scanpackages . /dev/null > Packages
+  gzip -9cn Packages > Packages.gz
+  apt-ftparchive \
+    -o APT::FTPArchive::Release::Origin="TerminalHero" \
+    -o APT::FTPArchive::Release::Label="TerminalHero" \
+    -o APT::FTPArchive::Release::Suite="stable" \
+    -o APT::FTPArchive::Release::Codename="stable" \
+    -o APT::FTPArchive::Release::Architectures="all" \
+    -o APT::FTPArchive::Release::Components="main" \
+    -o APT::FTPArchive::Release::Description="TerminalHero APT repository" \
+    release . > Release
+)
+
+if [[ -n "$signing_key" ]]; then
+  gpg --batch --yes --local-user "$signing_key" \
+    --clearsign --output "$repo_dir/InRelease" "$repo_dir/Release"
+  gpg --batch --yes --local-user "$signing_key" \
+    --detach-sign --output "$repo_dir/Release.gpg" "$repo_dir/Release"
+  gpg --batch --yes --export "$signing_key" > "$repo_dir/terminalhero-archive-keyring.gpg"
+fi
+
+cat > "$repo_dir/README.txt" <<README
+TerminalHero APT repository
+
+Signed installation:
+
+  curl -fsSL $apt_url/terminalhero-archive-keyring.gpg | sudo tee /usr/share/keyrings/terminalhero-archive-keyring.gpg >/dev/null
+  echo "deb [signed-by=/usr/share/keyrings/terminalhero-archive-keyring.gpg] $apt_url ./" | sudo tee /etc/apt/sources.list.d/terminalhero.list
+  sudo apt-get update
+  sudo apt-get install terminalhero
+
+Unsigned local testing:
+
+  echo "deb [trusted=yes] $apt_url ./" | sudo tee /etc/apt/sources.list.d/terminalhero.list
+  sudo apt-get update
+  sudo apt-get install terminalhero
+README
+
+echo "$repo_dir"
+

@@ -32,6 +32,42 @@ The binary will be installed in:
 
 You might have to relogin or update your PATH variable by hand.
 
+### Homebrew
+
+On macOS you can install Terminal Hero with Homebrew:
+
+    brew tap ciembor/terminalhero https://github.com/ciembor/TerminalHero.git
+    brew install terminalhero
+
+The formula uses a pinned GitHub revision and vendors the required CPAN modules inside the Homebrew keg.
+
+For local formula testing from this checkout:
+
+    brew tap ciembor/terminalhero "$PWD"
+    brew install --build-from-source ciembor/terminalhero/terminalhero
+    brew test ciembor/terminalhero/terminalhero
+
+### APT
+
+On Debian/Ubuntu systems you can install Terminal Hero from the APT repository:
+
+    curl -fsSL https://maciej-ciemborowicz.eu/apt/terminalhero/terminalhero-archive-keyring.gpg | sudo tee /usr/share/keyrings/terminalhero-archive-keyring.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/terminalhero-archive-keyring.gpg] https://maciej-ciemborowicz.eu/apt/terminalhero ./" | sudo tee /etc/apt/sources.list.d/terminalhero.list
+    sudo apt-get update
+    sudo apt-get install terminalhero
+
+The package depends on Ubuntu/Debian Perl packages where they are available and vendors `POE::Wheel::TermKey`, which is not packaged in Ubuntu 24.04.
+
+To build the Debian package and a static APT repository:
+
+    packaging/debian/build-deb
+    packaging/apt/build-repo
+
+To publish the generated APT repository to `maciej-ciemborowicz.eu`:
+
+    TERMINALHERO_APT_SIGNING_KEY=<gpg-key-id> packaging/apt/build-repo
+    packaging/apt/deploy-server
+
 ## Help
 
     Usage: terminalhero [options]
