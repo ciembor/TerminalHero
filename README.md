@@ -33,23 +33,6 @@ The binary will be installed in:
 
 You might have to relogin or update your PATH variable by hand.
 
-### Homebrew
-
-**NOTE: it's very buggy on OSX**
-
-On macOS you can install Terminal Hero with Homebrew:
-
-    brew tap ciembor/terminalhero https://github.com/ciembor/TerminalHero.git
-    brew install terminalhero
-
-The formula uses a pinned GitHub revision and vendors the required CPAN modules inside the Homebrew keg.
-
-For local formula testing from this checkout:
-
-    brew tap ciembor/terminalhero "$PWD"
-    brew install --build-from-source ciembor/terminalhero/terminalhero
-    brew test ciembor/terminalhero/terminalhero
-
 ### APT
 
 On Debian/Ubuntu systems you can install Terminal Hero from the APT repository:
@@ -70,6 +53,23 @@ To publish the generated APT repository to `maciej-ciemborowicz.eu`:
 
     TERMINALHERO_APT_SIGNING_KEY=<gpg-key-id> packaging/apt/build-repo
     packaging/apt/deploy-server
+
+### Homebrew
+
+**NOTE: libtermkey is very buggy on OSX!**
+
+On macOS you can install Terminal Hero with Homebrew:
+
+    brew tap ciembor/terminalhero https://github.com/ciembor/TerminalHero.git
+    brew install terminalhero
+
+The formula uses a pinned GitHub revision and vendors the required CPAN modules inside the Homebrew keg.
+
+For local formula testing from this checkout:
+
+    brew tap ciembor/terminalhero "$PWD"
+    brew install --build-from-source ciembor/terminalhero/terminalhero
+    brew test ciembor/terminalhero/terminalhero
 
 ## Help
 
