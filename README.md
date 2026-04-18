@@ -36,6 +36,7 @@ You might have to relogin or update your PATH variable by hand.
 ### Homebrew
 
 **NOTE: it's very buggy on OSX**
+
 On macOS you can install Terminal Hero with Homebrew:
 
     brew tap ciembor/terminalhero https://github.com/ciembor/TerminalHero.git
