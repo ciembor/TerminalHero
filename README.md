@@ -2,9 +2,10 @@
 __Linux society's response to Guitar Hero. :)__
 
 ## Demo
-https://vimeo.com/44892910
+[![Terminal Hero](terminal-hero.png)](https://www.youtube.com/watch?v=cWYFHhkJWDU)
 
 ## Installation
+### Manual Installation
 This game is written in Perl language, so it depends on __perl__ interpreter.
 It also needs __libtermkey__ and some extra Perl __modules__:
 
@@ -90,3 +91,6 @@ To publish the generated APT repository to `maciej-ciemborowicz.eu`:
     Each level is a new line, so it is going harder.
 
 Now go and play! :)
+
+## Author
+[Maciej Ciemborowicz](https://maciej-ciemborowicz.eu)
