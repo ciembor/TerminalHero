@@ -23,10 +23,6 @@ To install Terminal Hero type in your shell:
     make
     make install
 
-In ArchLinux you can use existing PKGBUILD for this game from AUR:
-
-    yaourt -S terminalhero-git
-
 The binary will be installed in:
 
     /usr/bin/vendor_perl
